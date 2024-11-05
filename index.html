@@ -130,16 +130,34 @@
 
             document.getElementById('participantNameInput').value = '';
         }
+
+        async function resetList() {
+            if (confirm("Are you sure you want to reset the Secret Santa list? This will delete all current names and pairings.")) {
+                try {
+                    await db.collection('santaList').doc('names').delete();
+                    await db.collection('santaList').doc('pairs').delete();
+                    await db.collection('santaList').doc('assigned').delete();
+                    names = [];
+                    isFinalized = false;
+                    displayNames();
+                    document.getElementById('result').innerHTML = `<p>The Secret Santa list has been reset.</p>`;
+                    console.log("Secret Santa list has been reset.");
+                } catch (error) {
+                    console.error("Error resetting list:", error);
+                }
+            }
+        }
     </script>
 </head>
 <body>
 
-<h1>Secret Santa Picker</h1>
+<h1>Hinmania Secret Santa Picker</h1>
 <p>Enter each participant's name and click "Add Name". Once the list is finalized, each person can enter their name to retrieve their Secret Santa!</p>
 
 <input type="text" id="nameInput" placeholder="Enter name">
 <button onclick="addName()">Add Name</button>
 <button onclick="finalizeList()">Finalize List</button>
+<button onclick="resetList()">RESET</button> <!-- RESET Button -->
 
 <ul id="nameList"></ul>
 
@@ -152,3 +170,4 @@
 
 </body>
 </html>
+
