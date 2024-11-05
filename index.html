@@ -24,11 +24,14 @@
             font-size: 1em;
         }
     </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body>
 
 <h1>Secret Santa Picker</h1>
-<p>Enter each participant's name and click "Add Name". When everyone is added, each person can enter their name and receive their Secret Santa assignment!</p>
+<p>Enter each participant's name and click "Add Name". Once the list is finalized, each person can enter their name to retrieve their Secret Santa!</p>
 
 <input type="text" id="nameInput" placeholder="Enter name">
 <button onclick="addName()">Add Name</button>
@@ -44,11 +47,24 @@
 <div id="result" style="margin-top:20px;"></div>
 
 <script>
+    // Firebase Configuration (replace this with your actual Firebase config)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     let names = [];
-    let santaPairs = {};
     let isFinalized = false;
 
-    function addName() {
+    async function addName() {
         if (isFinalized) {
             alert("The list is finalized. No more names can be added.");
             return;
@@ -59,6 +75,7 @@
         if (name && !names.includes(name)) {
             names.push(name);
             displayNames();
+            await db.collection('santaList').doc('names').set({ names });
         }
         nameInput.value = '';
     }
@@ -68,18 +85,16 @@
         nameList.innerHTML = names.map(name => `<li>${name}</li>`).join('');
     }
 
-    function finalizeList() {
+    async function finalizeList() {
         if (names.length < 2) {
             alert("Add at least 2 participants before finalizing.");
             return;
         }
         isFinalized = true;
-        assignSecretSanta();
-        alert("The list has been finalized. Each person can now retrieve their Secret Santa!");
-    }
 
-    function assignSecretSanta() {
         let availableRecipients = [...names];
+        const santaPairs = {};
+
         names.forEach(name => {
             let index;
             do {
@@ -89,21 +104,38 @@
             santaPairs[name] = availableRecipients[index];
             availableRecipients.splice(index, 1);
         });
+
+        await db.collection('santaList').doc('pairs').set(santaPairs);
+        alert("The list has been finalized. Each person can now retrieve their Secret Santa!");
     }
 
-    function getSecretSanta() {
-        if (!isFinalized) {
-            alert("The list is not finalized yet.");
+    async function getSecretSanta() {
+        const participantName = document.getElementById('participantNameInput').value.trim();
+        const santaPairsDoc = await db.collection('santaList').doc('pairs').get();
+        const assignedDoc = await db.collection('santaList').doc('assigned').get();
+        
+        if (!santaPairsDoc.exists) {
+            document.getElementById('result').innerHTML = `<p>The list has not been finalized yet.</p>`;
             return;
         }
 
-        const participantName = document.getElementById('participantNameInput').value.trim();
-        if (names.includes(participantName)) {
+        const santaPairs = santaPairsDoc.data();
+        const alreadyAssigned = assignedDoc.exists ? assignedDoc.data() : {};
+
+        if (alreadyAssigned[participantName]) {
+            document.getElementById('result').innerHTML = `<p>You already have your Secret Santa: <strong>${alreadyAssigned[participantName]}</strong></p>`;
+            return;
+        }
+
+        if (santaPairs[participantName]) {
             const recipient = santaPairs[participantName];
             document.getElementById('result').innerHTML = `<p>Your Secret Santa recipient is: <strong>${recipient}</strong></p>`;
+            alreadyAssigned[participantName] = recipient;
+            await db.collection('santaList').doc('assigned').set(alreadyAssigned);
         } else {
             document.getElementById('result').innerHTML = `<p>Name not found. Make sure you entered your name exactly as it was added.</p>`;
         }
+
         document.getElementById('participantNameInput').value = '';
     }
 </script>
