@@ -28,20 +28,32 @@
 <body>
 
 <h1>Secret Santa Picker</h1>
-<p>Enter the names of the participants and click "Pick".</p>
+<p>Enter each participant's name and click "Add Name". When everyone is added, each person can enter their name and receive their Secret Santa assignment!</p>
 
 <input type="text" id="nameInput" placeholder="Enter name">
 <button onclick="addName()">Add Name</button>
-<button onclick="pickSanta()">Pick Secret Santa</button>
+<button onclick="finalizeList()">Finalize List</button>
 
 <ul id="nameList"></ul>
+
+<div style="margin-top: 20px;">
+    <input type="text" id="participantNameInput" placeholder="Enter your name">
+    <button onclick="getSecretSanta()">Give me my Secret Santa</button>
+</div>
 
 <div id="result" style="margin-top:20px;"></div>
 
 <script>
     let names = [];
+    let santaPairs = {};
+    let isFinalized = false;
 
     function addName() {
+        if (isFinalized) {
+            alert("The list is finalized. No more names can be added.");
+            return;
+        }
+
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
         if (name && !names.includes(name)) {
@@ -56,25 +68,43 @@
         nameList.innerHTML = names.map(name => `<li>${name}</li>`).join('');
     }
 
-    function pickSanta() {
+    function finalizeList() {
         if (names.length < 2) {
-            document.getElementById('result').textContent = 'Add at least 2 participants to pick a Secret Santa!';
+            alert("Add at least 2 participants before finalizing.");
             return;
         }
-        let remaining = [...names];
-        let pairs = [];
+        isFinalized = true;
+        assignSecretSanta();
+        alert("The list has been finalized. Each person can now retrieve their Secret Santa!");
+    }
 
+    function assignSecretSanta() {
+        let availableRecipients = [...names];
         names.forEach(name => {
             let index;
             do {
-                index = Math.floor(Math.random() * remaining.length);
-            } while (remaining[index] === name);
+                index = Math.floor(Math.random() * availableRecipients.length);
+            } while (availableRecipients[index] === name);
 
-            pairs.push(`${name} → ${remaining[index]}`);
-            remaining.splice(index, 1);
+            santaPairs[name] = availableRecipients[index];
+            availableRecipients.splice(index, 1);
         });
+    }
 
-        document.getElementById('result').innerHTML = '<h2>Secret Santa Pairs:</h2>' + pairs.map(pair => `<p>${pair}</p>`).join('');
+    function getSecretSanta() {
+        if (!isFinalized) {
+            alert("The list is not finalized yet.");
+            return;
+        }
+
+        const participantName = document.getElementById('participantNameInput').value.trim();
+        if (names.includes(participantName)) {
+            const recipient = santaPairs[participantName];
+            document.getElementById('result').innerHTML = `<p>Your Secret Santa recipient is: <strong>${recipient}</strong></p>`;
+        } else {
+            document.getElementById('result').innerHTML = `<p>Name not found. Make sure you entered your name exactly as it was added.</p>`;
+        }
+        document.getElementById('participantNameInput').value = '';
     }
 </script>
 
