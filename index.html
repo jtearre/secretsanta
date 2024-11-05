@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Santa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            color: #d62828;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Secret Santa Picker</h1>
+<p>Enter the names of the participants and click "Pick".</p>
+
+<input type="text" id="nameInput" placeholder="Enter name">
+<button onclick="addName()">Add Name</button>
+<button onclick="pickSanta()">Pick Secret Santa</button>
+
+<ul id="nameList"></ul>
+
+<div id="result" style="margin-top:20px;"></div>
+
+<script>
+    let names = [];
+
+    function addName() {
+        const nameInput = document.getElementById('nameInput');
+        const name = nameInput.value.trim();
+        if (name && !names.includes(name)) {
+            names.push(name);
+            displayNames();
+        }
+        nameInput.value = '';
+    }
+
+    function displayNames() {
+        const nameList = document.getElementById('nameList');
+        nameList.innerHTML = names.map(name => `<li>${name}</li>`).join('');
+    }
+
+    function pickSanta() {
+        if (names.length < 2) {
+            document.getElementById('result').textContent = 'Add at least 2 participants to pick a Secret Santa!';
+            return;
+        }
+        let remaining = [...names];
+        let pairs = [];
+
+        names.forEach(name => {
+            let index;
+            do {
+                index = Math.floor(Math.random() * remaining.length);
+            } while (remaining[index] === name);
+
+            pairs.push(`${name} → ${remaining[index]}`);
+            remaining.splice(index, 1);
+        });
+
+        document.getElementById('result').innerHTML = '<h2>Secret Santa Pairs:</h2>' + pairs.map(pair => `<p>${pair}</p>`).join('');
+    }
+</script>
+
+</body>
+</html>
