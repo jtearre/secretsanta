@@ -194,6 +194,12 @@
         }
 
         async function resetList() {
+            const resetPassword = prompt("Enter reset password to clear the Secret Santa list:");
+            if (resetPassword !== "resetsanta") {
+                alert("Incorrect password. Reset failed.");
+                return;
+            }
+
             if (confirm("Are you sure you want to reset the Secret Santa list? This will delete all current names and pairings.")) {
                 try {
                     await db.collection('santaList').doc('names').delete();
@@ -225,7 +231,7 @@
 </div>
 
 <div class="container">
-    <h1>HINMANIA Secret Santa Picker</h1>
+    <h1>Secret Santa Picker</h1>
     <p>Enter your name and password to retrieve your Secret Santa.</p>
 
     <input type="text" id="participantNameInput" placeholder="Enter your name">
