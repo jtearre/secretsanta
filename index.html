@@ -24,39 +24,113 @@
             font-size: 1em;
         }
     </style>
+
     <!-- Firebase SDKs -->
-   
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDmqZP3xBRB8rHL10S0DtpFJwvqXndaCKo",
-    authDomain: "hinmaniasecretsanta.firebaseapp.com",
-    projectId: "hinmaniasecretsanta",
-    storageBucket: "hinmaniasecretsanta.firebasestorage.app",
-    messagingSenderId: "892185417778",
-    appId: "1:892185417778:web:ab3aeaa40bf7cf820d842b"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmqZP3xBRB8rHL10S0DtpFJwvqXndaCKo",
+            authDomain: "hinmaniasecretsanta.firebaseapp.com",
+            projectId: "hinmaniasecretsanta",
+            storageBucket: "hinmaniasecretsanta.firebasestorage.app",
+            messagingSenderId: "892185417778",
+            appId: "1:892185417778:web:ab3aeaa40bf7cf820d842b"
+        };
 
         // Initialize Firebase and Firestore
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-// Test Firestore connection
-db.collection("test").doc("testDoc").set({ connected: true })
-    .then(() => console.log("Firestore connected and test document created!"))
-    .catch((error) => console.error("Error connecting to Firestore:", error));
+        let names = [];
+        let isFinalized = false;
 
-</script>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+        async function addName() {
+            if (isFinalized) {
+                alert("The list is finalized. No more names can be added.");
+                return;
+            }
+
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
+            if (name && !names.includes(name)) {
+                names.push(name);
+                displayNames();
+                try {
+                    await db.collection('santaList').doc('names').set({ names });
+                    console.log("Name added to Firestore:", name);
+                } catch (error) {
+                    console.error("Error adding name to Firestore:", error);
+                }
+            }
+            nameInput.value = '';
+        }
+
+        function displayNames() {
+            const nameList = document.getElementById('nameList');
+            nameList.innerHTML = names.map(name => `<li>${name}</li>`).join('');
+        }
+
+        async function finalizeList() {
+            if (names.length < 2) {
+                alert("Add at least 2 participants before finalizing.");
+                return;
+            }
+            isFinalized = true;
+
+            let availableRecipients = [...names];
+            const santaPairs = {};
+
+            names.forEach(name => {
+                let index;
+                do {
+                    index = Math.floor(Math.random() * availableRecipients.length);
+                } while (availableRecipients[index] === name);
+
+                santaPairs[name] = availableRecipients[index];
+                availableRecipients.splice(index, 1);
+            });
+
+            try {
+                await db.collection('santaList').doc('pairs').set(santaPairs);
+                alert("The list has been finalized. Each person can now retrieve their Secret Santa!");
+            } catch (error) {
+                console.error("Error finalizing list:", error);
+            }
+        }
+
+        async function getSecretSanta() {
+            const participantName = document.getElementById('participantNameInput').value.trim();
+            const santaPairsDoc = await db.collection('santaList').doc('pairs').get();
+            const assignedDoc = await db.collection('santaList').doc('assigned').get();
+            
+            if (!santaPairsDoc.exists) {
+                document.getElementById('result').innerHTML = `<p>The list has not been finalized yet.</p>`;
+                return;
+            }
+
+            const santaPairs = santaPairsDoc.data();
+            const alreadyAssigned = assignedDoc.exists ? assignedDoc.data() : {};
+
+            if (alreadyAssigned[participantName]) {
+                document.getElementById('result').innerHTML = `<p>You already have your Secret Santa: <strong>${alreadyAssigned[participantName]}</strong></p>`;
+                return;
+            }
+
+            if (santaPairs[participantName]) {
+                const recipient = santaPairs[participantName];
+                document.getElementById('result').innerHTML = `<p>Your Secret Santa recipient is: <strong>${recipient}</strong></p>`;
+                alreadyAssigned[participantName] = recipient;
+                await db.collection('santaList').doc('assigned').set(alreadyAssigned);
+            } else {
+                document.getElementById('result').innerHTML = `<p>Name not found. Make sure you entered your name exactly as it was added.</p>`;
+            }
+
+            document.getElementById('participantNameInput').value = '';
+        }
+    </script>
 </head>
 <body>
 
@@ -75,100 +149,6 @@ db.collection("test").doc("testDoc").set({ connected: true })
 </div>
 
 <div id="result" style="margin-top:20px;"></div>
-
-<script>
-    // Firebase Configuration (replace this with your actual Firebase config)
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    let names = [];
-    let isFinalized = false;
-
-    async function addName() {
-        if (isFinalized) {
-            alert("The list is finalized. No more names can be added.");
-            return;
-        }
-
-        const nameInput = document.getElementById('nameInput');
-        const name = nameInput.value.trim();
-        if (name && !names.includes(name)) {
-            names.push(name);
-            displayNames();
-            await db.collection('santaList').doc('names').set({ names });
-        }
-        nameInput.value = '';
-    }
-
-    function displayNames() {
-        const nameList = document.getElementById('nameList');
-        nameList.innerHTML = names.map(name => `<li>${name}</li>`).join('');
-    }
-
-    async function finalizeList() {
-        if (names.length < 2) {
-            alert("Add at least 2 participants before finalizing.");
-            return;
-        }
-        isFinalized = true;
-
-        let availableRecipients = [...names];
-        const santaPairs = {};
-
-        names.forEach(name => {
-            let index;
-            do {
-                index = Math.floor(Math.random() * availableRecipients.length);
-            } while (availableRecipients[index] === name);
-
-            santaPairs[name] = availableRecipients[index];
-            availableRecipients.splice(index, 1);
-        });
-
-        await db.collection('santaList').doc('pairs').set(santaPairs);
-        alert("The list has been finalized. Each person can now retrieve their Secret Santa!");
-    }
-
-    async function getSecretSanta() {
-        const participantName = document.getElementById('participantNameInput').value.trim();
-        const santaPairsDoc = await db.collection('santaList').doc('pairs').get();
-        const assignedDoc = await db.collection('santaList').doc('assigned').get();
-        
-        if (!santaPairsDoc.exists) {
-            document.getElementById('result').innerHTML = `<p>The list has not been finalized yet.</p>`;
-            return;
-        }
-
-        const santaPairs = santaPairsDoc.data();
-        const alreadyAssigned = assignedDoc.exists ? assignedDoc.data() : {};
-
-        if (alreadyAssigned[participantName]) {
-            document.getElementById('result').innerHTML = `<p>You already have your Secret Santa: <strong>${alreadyAssigned[participantName]}</strong></p>`;
-            return;
-        }
-
-        if (santaPairs[participantName]) {
-            const recipient = santaPairs[participantName];
-            document.getElementById('result').innerHTML = `<p>Your Secret Santa recipient is: <strong>${recipient}</strong></p>`;
-            alreadyAssigned[participantName] = recipient;
-            await db.collection('santaList').doc('assigned').set(alreadyAssigned);
-        } else {
-            document.getElementById('result').innerHTML = `<p>Name not found. Make sure you entered your name exactly as it was added.</p>`;
-        }
-
-        document.getElementById('participantNameInput').value = '';
-    }
-</script>
 
 </body>
 </html>
