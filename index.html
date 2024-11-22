@@ -105,8 +105,24 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let names = [];
         let isFinalized = false;
+
+        async function loadData() {
+            try {
+                // Fetch names
+                const namesDoc = await db.collection('santaList').doc('names').get();
+                if (namesDoc.exists) {
+                    const names = namesDoc.data().names;
+                    displayNames(names);
+                }
+
+                // Check if finalized
+                const pairsDoc = await db.collection('santaList').doc('pairs').get();
+                isFinalized = pairsDoc.exists;
+            } catch (error) {
+                console.error("Error loading data from Firestore:", error);
+            }
+        }
 
         async function addName() {
             if (isFinalized) {
@@ -118,36 +134,51 @@
             const passwordInput = document.getElementById('passwordInput');
             const name = nameInput.value.trim();
             const password = passwordInput.value.trim();
-            
-            if (name && password && !names.includes(name)) {
-                names.push(name);
-                displayNames();
+
+            if (name && password) {
                 try {
-                    await db.collection('santaList').doc('names').set({ names });
-                    await db.collection('santaList').doc(name).set({ password });
-                    console.log("Name and password added to Firestore:", name);
+                    // Fetch existing names from Firestore
+                    const namesDoc = await db.collection('santaList').doc('names').get();
+                    const existingNames = namesDoc.exists ? namesDoc.data().names : [];
+
+                    if (!existingNames.includes(name)) {
+                        existingNames.push(name); // Add the new name
+                        await db.collection('santaList').doc('names').set({ names: existingNames });
+                        await db.collection('santaList').doc(name).set({ password });
+                        console.log("Name and password added to Firestore:", name);
+                        displayNames(existingNames); // Update UI
+                    } else {
+                        alert("This name is already in the list.");
+                    }
                 } catch (error) {
-                    console.error("Error adding name and password to Firestore:", error);
+                    console.error("Error adding name to Firestore:", error);
                 }
             }
+
             nameInput.value = '';
             passwordInput.value = '';
         }
 
-        function displayNames() {
+        function displayNames(names) {
             const nameList = document.getElementById('nameList');
             nameList.innerHTML = names.map(name => `<li>${name}</li>`).join('');
         }
 
         async function finalizeList() {
-            if (names.length < 2) {
+            if (isFinalized) {
+                alert("The list is already finalized.");
+                return;
+            }
+
+            const namesDoc = await db.collection('santaList').doc('names').get();
+            if (!namesDoc.exists || namesDoc.data().names.length < 2) {
                 alert("Add at least 2 participants before finalizing.");
                 return;
             }
-            isFinalized = true;
 
-            let availableRecipients = [...names];
+            const names = namesDoc.data().names;
             const santaPairs = {};
+            let availableRecipients = [...names];
 
             names.forEach(name => {
                 let index;
@@ -161,6 +192,7 @@
 
             try {
                 await db.collection('santaList').doc('pairs').set(santaPairs);
+                isFinalized = true;
                 alert("The list has been finalized. Each person can now retrieve their Secret Santa!");
             } catch (error) {
                 console.error("Error finalizing list:", error);
@@ -171,21 +203,20 @@
             const participantName = document.getElementById('participantNameInput').value.trim();
             const participantPassword = document.getElementById('participantPasswordInput').value.trim();
 
-            const santaPairsDoc = await db.collection('santaList').doc('pairs').get();
+            const pairsDoc = await db.collection('santaList').doc('pairs').get();
             const userDoc = await db.collection('santaList').doc(participantName).get();
 
-            if (!santaPairsDoc.exists) {
+            if (!pairsDoc.exists) {
                 document.getElementById('result').innerHTML = `<p>The list has not been finalized yet.</p>`;
                 return;
             }
-
-            const santaPairs = santaPairsDoc.data();
 
             if (!userDoc.exists || userDoc.data().password !== participantPassword) {
                 document.getElementById('result').innerHTML = `<p>Incorrect name or password.</p>`;
                 return;
             }
 
+            const santaPairs = pairsDoc.data();
             const recipient = santaPairs[participantName];
             document.getElementById('result').innerHTML = `<p>Your Secret Santa recipient is: <strong>${recipient}</strong></p>`;
 
@@ -206,16 +237,17 @@
                     await db.collection('santaList').doc('pairs').delete();
                     const userDocs = await db.collection('santaList').get();
                     userDocs.forEach(doc => db.collection('santaList').doc(doc.id).delete());
-                    names = [];
                     isFinalized = false;
-                    displayNames();
+                    displayNames([]);
                     document.getElementById('result').innerHTML = `<p>The Secret Santa list has been reset.</p>`;
-                    console.log("Secret Santa list has been reset.");
                 } catch (error) {
                     console.error("Error resetting list:", error);
                 }
             }
         }
+
+        // Load data on page load
+        window.onload = loadData;
     </script>
 </head>
 <body>
@@ -231,7 +263,7 @@
 </div>
 
 <div class="container">
-    <h1>HINMANIA Secret Santa Picker</h1>
+    <h1>Secret Santa Picker</h1>
     <p>Enter your name and password to retrieve your Secret Santa.</p>
 
     <input type="text" id="participantNameInput" placeholder="Enter your name">
