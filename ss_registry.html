@@ -144,6 +144,8 @@
 function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
     const giftItem = document.createElement('div');
     giftItem.className = 'gift-item';
+    giftItem.style.display = 'flex'; // Ensure the layout works for alignment
+    giftItem.style.alignItems = 'center';
 
     // Get the display text and background color
     const { text, backgroundColor } = getGiftDisplay(gift.status, gift.checkedBy);
@@ -157,11 +159,16 @@ function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
                 ${text}
             </div>
         </div>
-        ${isCurrentUser ? `<button style="margin-left: 10px; padding: 3px 8px; font-size: 0.7em;" onclick="deleteGift(${index})">X</button>` : ''}
+        ${
+            isCurrentUser
+                ? `<button style="margin-left: 10px; padding: 0; border: none; background: none; color: red; font-size: 1em; cursor: pointer;" onclick="deleteGift(${index})">X</button>`
+                : ''
+        }
     `;
 
     return giftItem;
 }
+
 
 
         // Get the text and background color for a gift's status
