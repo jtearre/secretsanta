@@ -143,54 +143,60 @@
             }
         }
 
-        function renderGifts() {
-            const container = document.getElementById('giftList');
-            container.innerHTML = '';
+  function renderGifts() {
+    const container = document.getElementById('giftList');
+    container.innerHTML = '';
 
-            if (giftRegistry[currentUser]) {
-                const userDiv = document.createElement('div');
-                userDiv.innerHTML = `<h3>My Gifts</h3>`;
+    // Render current user's gifts
+    if (giftRegistry[currentUser]) {
+        const userDiv = document.createElement('div');
+        userDiv.innerHTML = `<h3>My Gifts</h3>`;
 
-                giftRegistry[currentUser].forEach((gift, index) => {
-                    const giftItem = document.createElement('div');
-                    giftItem.className = 'gift-item';
+        giftRegistry[currentUser]
+            .filter(gift => gift && gift.text && gift.text.trim() !== "") // Filter out invalid or empty gifts
+            .forEach((gift, index) => {
+                const giftItem = document.createElement('div');
+                giftItem.className = 'gift-item';
 
-                    giftItem.innerHTML = `
-                        <p>${gift.text}</p>
-                        <div>
-                            <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
-                        </div>
-                    `;
+                giftItem.innerHTML = `
+                    <p>${gift.text}</p>
+                    <div>
+                        <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
+                    </div>
+                `;
 
-                    userDiv.appendChild(giftItem);
-                });
-
-                container.appendChild(userDiv);
-            }
-
-            Object.entries(giftRegistry).forEach(([username, gifts]) => {
-                if (username === currentUser) return;
-
-                const userDiv = document.createElement('div');
-                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
-
-                gifts.forEach((gift, index) => {
-                    const giftItem = document.createElement('div');
-                    giftItem.className = 'gift-item';
-
-                    giftItem.innerHTML = `
-                        <p>${gift.text}</p>
-                        <div class="gift-status ${getStatusClass(gift.status, gift.checkedBy)}" onclick="toggleCheck('${username}', ${index})">
-                            ${getStatusText(gift.status, gift.checkedBy)}
-                        </div>
-                    `;
-
-                    userDiv.appendChild(giftItem);
-                });
-
-                container.appendChild(userDiv);
+                userDiv.appendChild(giftItem);
             });
-        }
+
+        container.appendChild(userDiv);
+    }
+
+    // Render gifts for other users
+    Object.entries(giftRegistry).forEach(([username, gifts]) => {
+        if (username === currentUser) return;
+
+        const userDiv = document.createElement('div');
+        userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+
+        gifts
+            .filter(gift => gift && gift.text && gift.text.trim() !== "") // Filter out invalid or empty gifts
+            .forEach((gift, index) => {
+                const giftItem = document.createElement('div');
+                giftItem.className = 'gift-item';
+
+                giftItem.innerHTML = `
+                    <p>${gift.text}</p>
+                    <div class="gift-status ${getStatusClass(gift.status, gift.checkedBy)}" onclick="toggleCheck('${username}', ${index})">
+                        ${getStatusText(gift.status, gift.checkedBy)}
+                    </div>
+                `;
+
+                userDiv.appendChild(giftItem);
+            });
+
+        container.appendChild(userDiv);
+    });
+}
 
         async function addGift() {
             const giftText = document.getElementById('giftInput').value.trim();
