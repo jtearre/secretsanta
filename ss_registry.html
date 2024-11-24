@@ -243,6 +243,7 @@
                 return;
             }
 
+            giftRegistry[username][index] = gift; // Update local registry
             await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
             renderGifts();
         }
