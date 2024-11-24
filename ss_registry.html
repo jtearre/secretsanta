@@ -231,11 +231,13 @@
             const gift = giftRegistry[username][index];
 
             if (gift.status === 'unchecked') {
+                // Mark as blue if the current user checks it
                 if (username !== currentUser) {
                     gift.status = 'blue';
                     gift.checkedBy = currentUser;
                 }
             } else if (gift.status === 'blue' && gift.checkedBy === currentUser) {
+                // Uncheck the gift if it was checked by the current user
                 gift.status = 'unchecked';
                 gift.checkedBy = null;
             } else if (gift.status === 'green' || (gift.status === 'blue' && gift.checkedBy !== currentUser)) {
@@ -243,6 +245,7 @@
                 return;
             }
 
+            // Update the database with the updated gift status
             giftRegistry[username][index] = gift; // Update local registry
             await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
             renderGifts();
