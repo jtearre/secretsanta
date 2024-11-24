@@ -107,38 +107,38 @@
         }
 
         // Render all gifts
-        function renderGifts() {
-            const container = document.getElementById('giftList');
-            container.innerHTML = ''; // Clear the container
+   function renderGifts() {
+    const container = document.getElementById('giftList');
+    container.innerHTML = ''; // Clear the container to avoid duplication
 
-            // Render current user's gifts
-            if (giftRegistry[currentUser]) {
-                const myDiv = document.createElement('div');
-                myDiv.innerHTML = `<h3>My Gifts</h3>`;
+    // Render current user's gifts
+    if (giftRegistry[currentUser]) {
+        const myDiv = document.createElement('div');
+        myDiv.innerHTML = `<h3>My Gifts</h3>`;
 
-                giftRegistry[currentUser].forEach((gift, index) => {
-                    const giftItem = createGiftItem(gift, index, true);
-                    myDiv.appendChild(giftItem);
-                });
+        giftRegistry[currentUser].forEach((gift, index) => {
+            const giftItem = createGiftItem(gift, index, true); // Pass `true` for logged-in user's gifts
+            myDiv.appendChild(giftItem);
+        });
 
-                container.appendChild(myDiv);
-            }
+        container.appendChild(myDiv);
+    }
 
-            // Render gifts from other users
-            Object.entries(giftRegistry).forEach(([username, gifts]) => {
-                if (username === currentUser) return;
+    // Render other users' gifts
+    Object.entries(giftRegistry).forEach(([username, gifts]) => {
+        if (username === currentUser) return; // Skip the current user's gifts
 
-                const userDiv = document.createElement('div');
-                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+        const userDiv = document.createElement('div');
+        userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
 
-                gifts.forEach((gift, index) => {
-                    const giftItem = createGiftItem(gift, index, false, username);
-                    userDiv.appendChild(giftItem);
-                });
+        gifts.forEach((gift, index) => {
+            const giftItem = createGiftItem(gift, index, false, username); // Pass `false` for other users
+            userDiv.appendChild(giftItem);
+        });
 
-                container.appendChild(userDiv);
-            });
-        }
+        container.appendChild(userDiv);
+    });
+}
 
         // Get the text and background color for a gift's status
         function getGiftDisplay(status, checkedBy) {
@@ -181,6 +181,60 @@
             renderGifts();
         }
 
+function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
+    const giftItem = document.createElement('div');
+    giftItem.className = 'gift-item';
+    giftItem.style.display = 'flex'; // Use flexbox for layout
+    giftItem.style.alignItems = 'center'; // Align all elements vertically
+    giftItem.style.justifyContent = 'space-between'; // Space out the elements
+    giftItem.style.padding = '10px 0'; // Add spacing between rows
+    giftItem.style.borderBottom = '1px solid #ddd'; // Optional: Separate rows visually
+
+    // Gift text box
+    const giftText = document.createElement('div');
+    giftText.style.flex = '2'; // Take most of the row width
+    giftText.style.padding = '0 10px'; // Add padding around text
+    giftText.textContent = gift.text;
+
+    // Checked status box (only for other users' gifts)
+    let statusBox = null;
+    if (!isCurrentUser) {
+        const { text, backgroundColor } = getGiftDisplay(gift.status, gift.checkedBy);
+
+        statusBox = document.createElement('div');
+        statusBox.style.flex = '1';
+        statusBox.style.backgroundColor = backgroundColor;
+        statusBox.style.padding = '5px 10px';
+        statusBox.style.borderRadius = '5px';
+        statusBox.style.textAlign = 'center';
+        statusBox.style.cursor = 'pointer';
+        statusBox.textContent = text;
+        statusBox.onclick = () => toggleCheck(username, index);
+    }
+
+    // Delete button (only for current user's gifts)
+    let deleteBox = null;
+    if (isCurrentUser) {
+        deleteBox = document.createElement('button');
+        deleteBox.textContent = 'X';
+        deleteBox.style.flex = '0 0 auto';
+        deleteBox.style.padding = '2px 5px';
+        deleteBox.style.border = 'none';
+        deleteBox.style.background = 'none';
+        deleteBox.style.color = 'red';
+        deleteBox.style.cursor = 'pointer';
+        deleteBox.onclick = () => deleteGift(index);
+    }
+
+    // Append elements to the gift row
+    giftItem.appendChild(giftText);
+    if (statusBox) giftItem.appendChild(statusBox);
+    if (deleteBox) giftItem.appendChild(deleteBox);
+
+    return giftItem;
+}
+
+        
         // Toggle a gift's claim status
         async function toggleCheck(username, index) {
             const gift = giftRegistry[username][index];
