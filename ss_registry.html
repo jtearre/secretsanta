@@ -222,22 +222,33 @@
             renderGifts();
         }
 
-        async function toggleCheck(username, index) {
-            const gift = giftRegistry[username][index];
+     async function toggleCheck(username, index) {
+    const gift = giftRegistry[username][index];
 
-            if (gift.status === 'unchecked') {
-                if (username !== currentUser) {
-                    gift.status = 'blue';
-                    gift.checkedBy = currentUser;
-                }
-            } else if (gift.status === 'blue' && gift.checkedBy === currentUser) {
-                gift.status = 'unchecked';
-                gift.checkedBy = null;
-            }
-
-            await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
-            renderGifts();
+    if (gift.status === 'unchecked') {
+        // Mark as blue if the current user checks it
+        if (username !== currentUser) {
+            gift.status = 'blue';
+            gift.checkedBy = currentUser;
         }
+    } else if (gift.status === 'blue' && gift.checkedBy === currentUser) {
+        // Uncheck the gift if it was checked by the current user
+        gift.status = 'unchecked';
+        gift.checkedBy = null;
+    } else if (gift.status === 'blue' && gift.checkedBy !== currentUser) {
+        // Prevent overriding another user's claim
+        alert("This gift is already claimed by another Santa!");
+        return;
+    } else if (gift.status === 'green') {
+        // Prevent current user from claiming a gift already marked green
+        alert("This gift is already claimed by someone else!");
+        return;
+    }
+
+    // Update the database with the updated gift status
+    await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
+    renderGifts();
+}
 
         window.onload = authenticate;
     </script>
