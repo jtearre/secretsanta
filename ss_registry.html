@@ -153,12 +153,13 @@
                         const giftItem = document.createElement('div');
                         giftItem.className = 'gift-item';
 
-                      giftItem.innerHTML = `
-                        <p>${gift.text}</p>
-                        <div class="gift-status ${getStatusClass(gift.status)}" onclick="toggleCheck('${username}', ${index})">
-                            ${getStatusText(gift.status, gift.checkedBy)}
-                        </div>
-                    `;
+                giftItem.innerHTML = `
+                    <p>${gift.text}</p>
+                    <div class="gift-status ${getStatusDetails(gift.status, gift.checkedBy).className}" onclick="toggleCheck('${username}', ${index})">
+                        ${getStatusDetails(gift.status, gift.checkedBy).text}
+                    </div>
+                `;
+
 
 
                         userDiv.appendChild(giftItem);
@@ -194,21 +195,18 @@
             });
         }
 
-        function getStatusClass(status) {
-            switch (status) {
-                case 'blue': return 'iam';
-                case 'green': return 'another';
-                default: return 'nosanta';
+          function getStatusDetails(status, checkedBy) {
+            if (status === 'blue' && checkedBy === currentUser) {
+                return { className: 'iam', text: 'I am Santa!' };
+            } else if (status === 'blue' && checkedBy !== currentUser) {
+                return { className: 'another', text: 'Another Santa!' };
+            } else if (status === 'green') {
+                return { className: 'another', text: 'Another Santa!' };
+            } else {
+                return { className: 'nosanta', text: 'No Santa!' };
             }
         }
 
-        function getStatusText(status) {
-            switch (status) {
-                case 'blue': return 'I am Santa!';
-                case 'green': return 'Another Santa!';
-                default: return 'No Santa!';
-            }
-        }
 
         async function addGift() {
             const giftText = document.getElementById('giftInput').value.trim();
