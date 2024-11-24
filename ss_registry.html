@@ -99,6 +99,19 @@
         let currentUser = null;
         let giftRegistry = {};
 
+            function getStatusText(status, checkedBy) {
+                if (status === 'blue' && checkedBy === currentUser) {
+                    return 'I am Santa!';
+                } else if (status === 'blue' && checkedBy !== currentUser) {
+                    return 'Another Santa!';
+                } else if (status === 'green') {
+                    return 'Another Santa!';
+                } else {
+                    return 'No Santa!';
+                }
+            }
+
+        
         async function authenticate() {
             const username = prompt("Enter your name:");
             const password = prompt("Enter your password:");
@@ -140,12 +153,13 @@
                         const giftItem = document.createElement('div');
                         giftItem.className = 'gift-item';
 
-                        giftItem.innerHTML = `
-                            <p>${gift.text}</p>
-                            <div>
-                                <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
-                            </div>
-                        `;
+                      giftItem.innerHTML = `
+                        <p>${gift.text}</p>
+                        <div class="gift-status ${getStatusClass(gift.status)}" onclick="toggleCheck('${username}', ${index})">
+                            ${getStatusText(gift.status, gift.checkedBy)}
+                        </div>
+                    `;
+
 
                         userDiv.appendChild(giftItem);
                     });
