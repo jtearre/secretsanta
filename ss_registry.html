@@ -51,10 +51,6 @@
             flex-grow: 1;
         }
 
-        .gift-item button {
-            margin-left: 10px;
-        }
-
         .gift-status {
             padding: 5px 10px;
             border-radius: 5px;
@@ -62,6 +58,7 @@
             color: #333;
             cursor: pointer;
             user-select: none;
+            text-align: center;
         }
 
         .gift-status.nosanta {
@@ -74,6 +71,10 @@
 
         .gift-status.another {
             background-color: #d4ffd4;
+        }
+
+        button {
+            cursor: pointer;
         }
     </style>
 
@@ -96,9 +97,10 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let currentUser = null;
-        let giftRegistry = {};
+        let currentUser = null; // The logged-in user
+        let giftRegistry = {}; // Stores all users' gifts locally
 
+        // Authenticate user on page load
         async function authenticate() {
             const username = prompt("Enter your name:");
             const password = prompt("Enter your password:");
@@ -114,6 +116,7 @@
             return true;
         }
 
+        // Load all gifts from Firestore
         async function loadGifts() {
             const registrySnapshot = await db.collection('giftRegistry').get();
             giftRegistry = {};
@@ -125,61 +128,57 @@
             renderGifts();
         }
 
+        // Render the gifts
         function renderGifts() {
             const container = document.getElementById('giftList');
             container.innerHTML = '';
 
-            // Render current user's gifts
+            // Current user's gifts
             if (giftRegistry[currentUser]) {
-                const userDiv = document.createElement('div');
-                userDiv.innerHTML = `<h3>My Gifts</h3>`;
+                const myDiv = document.createElement('div');
+                myDiv.innerHTML = `<h3>My Gifts</h3>`;
 
-                giftRegistry[currentUser]
-                    .filter(gift => gift && gift.text) // Remove undefined or empty entries
-                    .forEach((gift, index) => {
-                        const giftItem = document.createElement('div');
-                        giftItem.className = 'gift-item';
+                giftRegistry[currentUser].forEach((gift, index) => {
+                    const giftItem = document.createElement('div');
+                    giftItem.className = 'gift-item';
 
-                        giftItem.innerHTML = `
-                            <p>${gift.text}</p>
-                            <div>
-                                <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
-                            </div>
-                        `;
+                    giftItem.innerHTML = `
+                        <p>${gift.text}</p>
+                        <button onclick="deleteGift(${index})">Delete</button>
+                    `;
 
-                        userDiv.appendChild(giftItem);
-                    });
+                    myDiv.appendChild(giftItem);
+                });
 
-                container.appendChild(userDiv);
+                container.appendChild(myDiv);
             }
 
-            // Render gifts for other users
+            // Gifts from other users
             Object.entries(giftRegistry).forEach(([username, gifts]) => {
                 if (username === currentUser) return;
 
                 const userDiv = document.createElement('div');
                 userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
 
-                gifts
-                    .filter(gift => gift && gift.text) // Remove undefined or empty entries
-                    .forEach((gift, index) => {
-                        const giftItem = document.createElement('div');
-                        giftItem.className = 'gift-item';
+                gifts.forEach((gift, index) => {
+                    const giftItem = document.createElement('div');
+                    giftItem.className = 'gift-item';
 
-                        giftItem.innerHTML = `
-                            <p>${gift.text}</p>
-                            <div class="gift-status ${getStatusClass(gift.status)}" onclick="toggleCheck('${username}', ${index})">
-                                ${getStatusText(gift.status)}
-                            </div>
-                        `;
+                    giftItem.innerHTML = `
+                        <p>${gift.text}</p>
+                        <div class="gift-status ${getStatusClass(gift.status)}" onclick="toggleCheck('${username}', ${index})">
+                            ${getStatusText(gift.status)}
+                        </div>
+                    `;
 
-                        userDiv.appendChild(giftItem);
-                    });
+                    userDiv.appendChild(giftItem);
+                });
 
                 container.appendChild(userDiv);
             });
         }
 
+        // Get the CSS class based on gift status
         function getStatusClass(status) {
             switch (status) {
                 case 'blue': return 'iam';
@@ -188,6 +187,7 @@
             }
         }
 
+        // Get the text based on gift status
         function getStatusText(status) {
             switch (status) {
                 case 'blue': return 'I am Santa!';
@@ -196,6 +196,7 @@
             }
         }
 
+        // Add a gift to the user's list
         async function addGift() {
             const giftText = document.getElementById('giftInput').value.trim();
             if (!giftText) {
@@ -213,65 +214,39 @@
             document.getElementById('giftInput').value = '';
         }
 
-        async function deleteGift(username, index) {
-            if (username !== currentUser) {
-                alert("You can only delete your own gifts!");
-                return;
-            }
-
-            const gifts = giftRegistry[username];
+        // Delete a gift from the current user's list
+        async function deleteGift(index) {
+            const gifts = giftRegistry[currentUser];
             gifts.splice(index, 1);
 
-            await db.collection('giftRegistry').doc(username).set({ gifts });
-            giftRegistry[username] = gifts;
+            await db.collection('giftRegistry').doc(currentUser).set({ gifts });
+            giftRegistry[currentUser] = gifts;
             renderGifts();
         }
 
-    async function toggleCheck(username, index) {
-    // Get the specific gift object from the user's gift list
-    const gift = giftRegistry[username][index];
+        // Toggle gift claim status
+        async function toggleCheck(username, index) {
+            const gift = giftRegistry[username][index];
 
-    // Handle status changes
-    if (gift.status === 'unchecked') {
-        if (username !== currentUser) {
-            // Current user claims the gift
-            gift.status = 'blue';
-            gift.checkedBy = currentUser;
-        }
-    } else if (gift.status === 'blue') {
-        if (gift.checkedBy === currentUser) {
-            // Current user unclaims their own gift
-            gift.status = 'unchecked';
-            gift.checkedBy = null;
-        } else {
-            // Prevent the current user from unclaiming another user's gift
-            alert("You cannot change someone else's claim.");
-            return;
-        }
-    } else if (gift.status === 'green') {
-        // Prevent modification of a gift already claimed by another user
-        alert("This gift is already claimed by another Santa!");
-        return;
-    }
+            if (gift.status === 'unchecked') {
+                if (username !== currentUser) {
+                    gift.status = 'blue';
+                    gift.checkedBy = currentUser;
+                }
+            } else if (gift.status === 'blue' && gift.checkedBy === currentUser) {
+                gift.status = 'unchecked';
+                gift.checkedBy = null;
+            } else {
+                alert("This gift is already claimed by another Santa!");
+                return;
+            }
 
-    // Update the database
-    try {
-        giftRegistry[username][index] = gift; // Update local registry
-        await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
-        console.log(`Gift updated successfully for user: ${username}`, gift);
-    } catch (error) {
-        console.error("Error updating Firestore:", error);
-        alert("An error occurred while updating the gift status. Please try again.");
-    }
-
-    // Re-render the gift list
-    renderGifts();
-}
-            giftRegistry[username][index] = gift; // Update local registry
+            giftRegistry[username][index] = gift;
             await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
             renderGifts();
         }
 
+        // Initialize the app
         window.onload = authenticate;
     </script>
 </head>
@@ -279,12 +254,8 @@
 
 <div class="container">
     <h1>Secret Santa Registry</h1>
-
-    <!-- Add gift box -->
-    <textarea id="giftInput" placeholder="Describe your gift (add links, details, etc.)"></textarea>
-    <button onclick="addGift()">Add to My List</button>
-
-    <!-- Gift lists -->
+    <textarea id="giftInput" placeholder="Add a gift description (links, details, etc.)"></textarea>
+    <button onclick="addGift()">Add Gift</button>
     <div id="giftList" class="gift-list"></div>
 </div>
 
