@@ -262,16 +262,25 @@
     <ul id="nameList"></ul>
 </div>
 
-<div class="container">
-    <h1>Secret Santa Picker</h1>
-    <p>Enter your name and password to retrieve your Secret Santa.</p>
+<body>
+    <div style="position: absolute; top: 10px; left: 10px;">
+        <a href="ss_registry.html">
+            <button style="padding: 10px 20px; font-size: 1em;">Go to Registry</button>
+        </a>
+    </div>
 
-    <input type="text" id="participantNameInput" placeholder="Enter your name">
-    <input type="password" id="participantPasswordInput" placeholder="Enter your password">
-    <button onclick="getSecretSanta()">Give me my Secret Santa</button>
+    <div class="container">
+        <h1>Secret Santa Picker</h1>
+        <p>Enter your name and password to retrieve your Secret Santa.</p>
 
-    <div id="result" class="result-box"></div>
-</div>
+        <input type="text" id="participantNameInput" placeholder="Enter your name">
+        <input type="password" id="participantPasswordInput" placeholder="Enter your password">
+        <button onclick="getSecretSanta()">Give me my Secret Santa</button>
+
+        <div id="result" class="result-box"></div>
+    </div>
+</body>
+
 
 </body>
 </html>
