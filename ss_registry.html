@@ -1,3 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SS Registry</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+            padding-bottom: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #d62828;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        textarea, button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .gift-list {
+            margin-top: 20px;
+        }
+
+        .gift-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .gift-item p {
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        button {
+            cursor: pointer;
+        }
+    </style>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmqZP3xBRB8rHL10S0DtpFJwvqXndaCKo",
+            authDomain: "hinmaniasecretsanta.firebaseapp.com",
+            projectId: "hinmaniasecretsanta",
+            storageBucket: "hinmaniasecretsanta.firebasestorage.app",
+            messagingSenderId: "892185417778",
+            appId: "1:892185417778:web:ab3aeaa40bf7cf820d842b"
+        };
+
+        // Initialize Firebase and Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let giftRegistry = {};
+
+        // Authenticate user on page load
+        async function authenticate() {
+            const username = prompt("Enter your name:");
+            const password = prompt("Enter your password:");
+            const userDoc = await db.collection('santaList').doc(username).get();
+
+            if (!userDoc.exists || userDoc.data().password !== password) {
+                alert("Invalid name or password. Access denied.");
+                return false;
+            }
+
+            currentUser = username;
+            loadGifts();
+            return true;
+        }
+
+        // Load all gifts from Firestore
+        async function loadGifts() {
+            const registrySnapshot = await db.collection('giftRegistry').get();
+            giftRegistry = {};
+
+            registrySnapshot.forEach(doc => {
+                giftRegistry[doc.id] = doc.data().gifts || [];
+            });
+
+            renderGifts();
+        }
+
+        // Render all gifts
+        function renderGifts() {
+            const container = document.getElementById('giftList');
+            container.innerHTML = ''; // Clear the container
+
+            // Render current user's gifts
+            if (giftRegistry[currentUser]) {
+                const myDiv = document.createElement('div');
+                myDiv.innerHTML = `<h3>My Gifts</h3>`;
+
+                giftRegistry[currentUser].forEach((gift, index) => {
+                    const giftItem = createGiftItem(gift, index, true);
+                    myDiv.appendChild(giftItem);
+                });
+
+                container.appendChild(myDiv);
+            }
+
+            // Render gifts from other users
+            Object.entries(giftRegistry).forEach(([username, gifts]) => {
+                if (username === currentUser) return;
+
+                const userDiv = document.createElement('div');
+                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+
+                gifts.forEach((gift, index) => {
+                    const giftItem = createGiftItem(gift, index, false, username);
+                    userDiv.appendChild(giftItem);
+                });
+
+                container.appendChild(userDiv);
+            });
+        }
+
+        // Create a gift item element
 function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
     const giftItem = document.createElement('div');
     giftItem.className = 'gift-item';
@@ -19,3 +162,83 @@ function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
 
     return giftItem;
 }
+
+
+        // Get the text and background color for a gift's status
+        function getGiftDisplay(status, checkedBy) {
+            if (status === 'blue' && checkedBy === currentUser) {
+                return { text: 'I am Santa!', backgroundColor: '#dceeff' }; // Light blue
+            } else if (status === 'blue' && checkedBy !== currentUser) {
+                return { text: 'Another Santa!', backgroundColor: '#d4ffd4' }; // Light green
+            } else if (status === 'green') {
+                return { text: 'Another Santa!', backgroundColor: '#d4ffd4' }; // Light green
+            } else {
+                return { text: 'No Santa!', backgroundColor: '#ffe6e6' }; // Light red
+            }
+        }
+
+        // Add a gift to the current user's list
+        async function addGift() {
+            const giftText = document.getElementById('giftInput').value.trim();
+            if (!giftText) {
+                alert("Gift description cannot be empty.");
+                return;
+            }
+
+            const gifts = giftRegistry[currentUser] || [];
+            gifts.push({ text: giftText, status: 'unchecked', checkedBy: null });
+
+            await db.collection('giftRegistry').doc(currentUser).set({ gifts });
+            giftRegistry[currentUser] = gifts;
+            renderGifts();
+
+            document.getElementById('giftInput').value = '';
+        }
+
+        // Delete a gift from the current user's list
+        async function deleteGift(index) {
+            const gifts = giftRegistry[currentUser];
+            gifts.splice(index, 1);
+
+            await db.collection('giftRegistry').doc(currentUser).set({ gifts });
+            giftRegistry[currentUser] = gifts;
+            renderGifts();
+        }
+
+        // Toggle a gift's claim status
+        async function toggleCheck(username, index) {
+            const gift = giftRegistry[username][index];
+
+            if (gift.status === 'unchecked') {
+                if (username !== currentUser) {
+                    gift.status = 'blue';
+                    gift.checkedBy = currentUser;
+                }
+            } else if (gift.status === 'blue' && gift.checkedBy === currentUser) {
+                gift.status = 'unchecked';
+                gift.checkedBy = null;
+            } else {
+                alert("This gift is already claimed by another Santa!");
+                return;
+            }
+
+            giftRegistry[username][index] = gift;
+            await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
+            renderGifts();
+        }
+
+        // Initialize the app
+        window.onload = authenticate;
+    </script>
+</head>
+<body>
+
+<div class="container">
+    <h1>Secret Santa Registry</h1>
+    <textarea id="giftInput" placeholder="Add a gift description (links, details, etc.)"></textarea>
+    <button onclick="addGift()">Add Gift</button>
+    <div id="giftList" class="gift-list"></div>
+</div>
+
+</body>
+</html>
