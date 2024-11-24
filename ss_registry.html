@@ -10,6 +10,7 @@
             margin: 0;
             padding: 20px;
             background-color: #f7f7f7;
+            padding-bottom: 50px;
         }
 
         h1 {
@@ -58,25 +59,24 @@
             cursor: pointer;
             width: 20px;
             height: 20px;
+            display: inline-block;
             margin-left: 10px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
         }
 
         .checkbox.unchecked {
             background: none;
-            border: 2px solid #ddd;
-            border-radius: 50%;
         }
 
         .checkbox.blue {
             background: blue;
             border: 2px solid blue;
-            border-radius: 50%;
         }
 
         .checkbox.green {
             background: green;
             border: 2px solid green;
-            border-radius: 50%;
         }
     </style>
 
@@ -99,7 +99,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let currentUser = null; // Set this to the logged-in user after verifying with a password
+        let currentUser = null;
         let giftRegistry = {};
 
         async function authenticate() {
@@ -132,10 +132,35 @@
             const container = document.getElementById('giftList');
             container.innerHTML = '';
 
-            Object.entries(giftRegistry).forEach(([username, gifts]) => {
+            // Render current user's gifts
+            if (giftRegistry[currentUser]) {
                 const userDiv = document.createElement('div');
-                userDiv.innerHTML = `<h3>${username === currentUser ? "My Gifts" : `${username}'s Gifts`}</h3>`;
-                
+                userDiv.innerHTML = `<h3>My Gifts</h3>`;
+
+                giftRegistry[currentUser].forEach((gift, index) => {
+                    const giftItem = document.createElement('div');
+                    giftItem.className = 'gift-item';
+
+                    giftItem.innerHTML = `
+                        <p>${gift.text}</p>
+                        <div>
+                            <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
+                        </div>
+                    `;
+
+                    userDiv.appendChild(giftItem);
+                });
+
+                container.appendChild(userDiv);
+            }
+
+            // Render gifts for other users
+            Object.entries(giftRegistry).forEach(([username, gifts]) => {
+                if (username === currentUser) return;
+
+                const userDiv = document.createElement('div');
+                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+
                 gifts.forEach((gift, index) => {
                     const giftItem = document.createElement('div');
                     giftItem.className = 'gift-item';
@@ -143,10 +168,6 @@
                     giftItem.innerHTML = `
                         <p>${gift.text}</p>
                         <div>
-                            ${username === currentUser
-                                ? `<button onclick="deleteGift('${username}', ${index})">Delete</button>`
-                                : ''
-                            }
                             <div class="checkbox ${gift.status}" onclick="toggleCheck('${username}', ${index})"></div>
                         </div>
                     `;
