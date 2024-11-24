@@ -227,22 +227,46 @@
             renderGifts();
         }
 
-        async function toggleCheck(username, index) {
-            const gift = giftRegistry[username][index];
+    async function toggleCheck(username, index) {
+    // Get the specific gift object from the user's gift list
+    const gift = giftRegistry[username][index];
 
-            if (gift.status === 'unchecked') {
-                if (username !== currentUser) {
-                    gift.status = 'blue';
-                    gift.checkedBy = currentUser;
-                }
-            } else if (gift.status === 'blue' && gift.checkedBy === currentUser) {
-                gift.status = 'unchecked';
-                gift.checkedBy = null;
-            } else if (gift.status === 'green' || (gift.status === 'blue' && gift.checkedBy !== currentUser)) {
-                alert("This gift is already claimed by someone else!");
-                return;
-            }
+    // Handle status changes
+    if (gift.status === 'unchecked') {
+        if (username !== currentUser) {
+            // Current user claims the gift
+            gift.status = 'blue';
+            gift.checkedBy = currentUser;
+        }
+    } else if (gift.status === 'blue') {
+        if (gift.checkedBy === currentUser) {
+            // Current user unclaims their own gift
+            gift.status = 'unchecked';
+            gift.checkedBy = null;
+        } else {
+            // Prevent the current user from unclaiming another user's gift
+            alert("You cannot change someone else's claim.");
+            return;
+        }
+    } else if (gift.status === 'green') {
+        // Prevent modification of a gift already claimed by another user
+        alert("This gift is already claimed by another Santa!");
+        return;
+    }
 
+    // Update the database
+    try {
+        giftRegistry[username][index] = gift; // Update local registry
+        await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
+        console.log(`Gift updated successfully for user: ${username}`, gift);
+    } catch (error) {
+        console.error("Error updating Firestore:", error);
+        alert("An error occurred while updating the gift status. Please try again.");
+    }
+
+    // Re-render the gift list
+    renderGifts();
+}
             giftRegistry[username][index] = gift; // Update local registry
             await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
             renderGifts();
