@@ -141,25 +141,25 @@
         }
 
         // Create a gift item element
-        function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
-            const giftItem = document.createElement('div');
-            giftItem.className = 'gift-item';
+function createGiftItem(gift, index, isCurrentUser, username = currentUser) {
+    const giftItem = document.createElement('div');
+    giftItem.className = 'gift-item';
 
-            // Get the display text and background color
-            const { text, backgroundColor } = getGiftDisplay(gift.status, gift.checkedBy);
+    // Get the display text and background color
+    const { text, backgroundColor } = getGiftDisplay(gift.status, gift.checkedBy);
 
-            giftItem.innerHTML = `
-                <p>${gift.text}</p>
-                <div 
-                    style="background-color: ${backgroundColor}; padding: 5px 10px; border-radius: 5px; cursor: pointer;" 
-                    onclick="toggleCheck('${username}', ${index})">
-                    ${text}
-                </div>
-                ${isCurrentUser ? `<button onclick="deleteGift(${index})">Delete</button>` : ''}
-            `;
+    giftItem.innerHTML = `
+        <p style="flex: 1; margin-right: 10px;">${gift.text}</p>
+        <div 
+            style="background-color: ${backgroundColor}; padding: 5px 10px; border-radius: 5px; cursor: pointer;" 
+            onclick="toggleCheck('${username}', ${index})">
+            ${text}
+        </div>
+        ${isCurrentUser ? `<button style="margin-left: 10px; padding: 5px 10px; font-size: 0.8em;" onclick="deleteGift(${index})">Delete</button>` : ''}
+    `;
 
-            return giftItem;
-        }
+    return giftItem;
+}
 
         // Get the text and background color for a gift's status
         function getGiftDisplay(status, checkedBy) {
