@@ -158,12 +158,12 @@
                 const giftItem = document.createElement('div');
                 giftItem.className = 'gift-item';
 
-                giftItem.innerHTML = `
-                    <p>${gift.text}</p>
-                    <div>
-                        <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
-                    </div>
-                `;
+            giftItem.innerHTML = `
+                <p>${gift.text}</p>
+                <div>
+                    <button style="margin-left: 10px;" onclick="deleteGift('${currentUser}', ${index})">Delete</button>
+                </div>
+            `;
 
                 userDiv.appendChild(giftItem);
             });
