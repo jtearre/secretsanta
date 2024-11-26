@@ -145,17 +145,20 @@
 
 
 async function renderGiftSuggestionsForUser(username) {
+    const userSection = document.querySelector(`#user-section-${username}`);
+    if (!userSection) {
+        console.error(`User section not found for: ${username}`);
+        return; // Exit early if the section doesn't exist
+    }
+
     const suggestionsContainer = document.createElement('div');
     suggestionsContainer.className = 'gift-list';
 
-    // Add a header for the user's suggestions
     suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`;
 
-    // Fetch suggestions for the user from the database
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
     const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
 
-    // Render each suggestion
     suggestions.forEach((suggestion, index) => {
         const suggestionItem = document.createElement('div');
         suggestionItem.className = 'gift-item';
@@ -171,7 +174,6 @@ async function renderGiftSuggestionsForUser(username) {
         suggestionsContainer.appendChild(suggestionItem);
     });
 
-    // Add a text box and submit button for new suggestions
     const newSuggestionBox = document.createElement('div');
     newSuggestionBox.innerHTML = `
         <textarea id="suggestionInput-${username}" placeholder="Suggest a gift..."></textarea>
@@ -179,11 +181,8 @@ async function renderGiftSuggestionsForUser(username) {
     `;
     suggestionsContainer.appendChild(newSuggestionBox);
 
-    // Append the suggestions container to the user section
-    const userSection = document.querySelector(`#user-section-${username}`);
     userSection.appendChild(suggestionsContainer);
 }
-
 
   async function deleteSuggestion(username, index) {
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
