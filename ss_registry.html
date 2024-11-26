@@ -206,36 +206,41 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
     renderGiftSuggestionsForUser(username);
 }
 
-        async function submitSuggestion(username) {
-    const input = document.getElementById(`suggestionInput-${username}`);
-    const suggestionText = input.value.trim();
+async function submitSuggestion(username) {
+    const suggestionInput = document.getElementById(`suggestionInput-${username}`);
+    const suggestionText = suggestionInput.value.trim();
 
     if (!suggestionText) {
         alert("Suggestion cannot be empty.");
         return;
     }
 
-    // Fetch current suggestions from the database
+    // Fetch current suggestions for the user
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
-    const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
+    const currentSuggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
 
     // Add the new suggestion
-    suggestions.push({
+    currentSuggestions.push({
         text: suggestionText,
         suggestedBy: currentUser,
-        status: 'No Thanks Already Have!' // Default status
     });
 
     // Update the database
-    await db.collection('gift_suggestions').doc(username).set({ suggestions });
+    await db.collection('gift_suggestions').doc(username).set({
+        suggestions: currentSuggestions,
+    });
 
     // Clear the input box
-    input.value = '';
+    suggestionInput.value = '';
 
-    // Re-render the suggestions
-    renderGiftSuggestionsForUser(username);
+    // Re-render the suggestions for the user
+    const userDiv = document.querySelector(`#user-section-${username}`);
+    if (userDiv) {
+        // Clear the existing suggestions section and reload
+        userDiv.querySelector('.gift-list').remove();
+        await renderGiftSuggestionsForUser(username, userDiv);
+    }
 }
-
 
   
     function renderGifts() {
