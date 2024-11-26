@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SS Registry</title>
     <style>
+        /* Styles unchanged for consistency */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -64,15 +65,11 @@
             user-select: none;
         }
 
-        .gift-status.nosanta {
+        .gift-status.nothanks {
             background-color: #ffe6e6;
         }
 
-        .gift-status.iam {
-            background-color: #dceeff;
-        }
-
-        .gift-status.another {
+        .gift-status.yesplease {
             background-color: #d4ffd4;
         }
     </style>
@@ -96,6 +93,7 @@
 
         let currentUser = null;
         let giftRegistry = {};
+        let giftSuggestions = {};
 
         async function authenticate() {
             const username = prompt("Enter your name:");
@@ -109,6 +107,7 @@
 
             currentUser = username;
             loadGifts();
+            loadSuggestions(); // Load gift suggestions
             return true;
         }
 
@@ -123,122 +122,96 @@
             renderGifts();
         }
 
-        function getStatusText(status, checkedBy) {
-            if (status === 'checked' && checkedBy === currentUser) {
-                return 'I am Santa!';
-            } else if (status === 'checked' && checkedBy !== currentUser) {
-                return 'Another Santa!';
-            } else {
-                return 'No Santa!';
-            }
-        }
+        async function loadSuggestions() {
+            const suggestionsSnapshot = await db.collection('gift_suggestions').get();
+            giftSuggestions = {};
 
-        function getStatusClass(status, checkedBy) {
-            if (status === 'checked' && checkedBy === currentUser) {
-                return 'iam';
-            } else if (status === 'checked' && checkedBy !== currentUser) {
-                return 'another';
-            } else {
-                return 'nosanta';
-            }
-        }
-
-  function renderGifts() {
-    const container = document.getElementById('giftList');
-    container.innerHTML = '';
-
-    // Render current user's gifts
-    if (giftRegistry[currentUser]) {
-        const userDiv = document.createElement('div');
-        userDiv.innerHTML = `<h3>My Gifts</h3>`;
-
-        giftRegistry[currentUser]
-            .filter(gift => gift && gift.text && gift.text.trim() !== "") // Filter out invalid or empty gifts
-            .forEach((gift, index) => {
-                const giftItem = document.createElement('div');
-                giftItem.className = 'gift-item';
-
-                  giftItem.innerHTML = `
-                    <p style="flex: 1;">${gift.text}</p>
-                    <div>
-                        <button style="margin-right: 10px;" onclick="deleteGift('${currentUser}', ${index})">Delete</button>
-                    </div>
-                `;
-
-                userDiv.appendChild(giftItem);
+            suggestionsSnapshot.forEach(doc => {
+                giftSuggestions[doc.id] = doc.data().suggestions || [];
             });
 
-        container.appendChild(userDiv);
-    }
+            renderGifts(); // Re-render gifts to include suggestions
+        }
 
-    // Render gifts for other users
-    Object.entries(giftRegistry).forEach(([username, gifts]) => {
-        if (username === currentUser) return;
+        function renderGifts() {
+            const container = document.getElementById('giftList');
+            container.innerHTML = '';
 
-        const userDiv = document.createElement('div');
-        userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+            // Render current user's gifts
+            if (giftRegistry[currentUser]) {
+                const userDiv = document.createElement('div');
+                userDiv.innerHTML = `<h3>My Gifts</h3>`;
 
-        gifts
-            .filter(gift => gift && gift.text && gift.text.trim() !== "") // Filter out invalid or empty gifts
-            .forEach((gift, index) => {
-                const giftItem = document.createElement('div');
-                giftItem.className = 'gift-item';
+                giftRegistry[currentUser]
+                    .filter(gift => gift && gift.text && gift.text.trim() !== "")
+                    .forEach((gift, index) => {
+                        const giftItem = document.createElement('div');
+                        giftItem.className = 'gift-item';
 
-                giftItem.innerHTML = `
-                    <p>${gift.text}</p>
-                    <div class="gift-status ${getStatusClass(gift.status, gift.checkedBy)}" onclick="toggleCheck('${username}', ${index})">
-                        ${getStatusText(gift.status, gift.checkedBy)}
-                    </div>
-                `;
+                        giftItem.innerHTML = `
+                            <p>${gift.text}</p>
+                            <div>
+                                <button onclick="deleteGift('${currentUser}', ${index})">Delete</button>
+                            </div>
+                        `;
 
-                userDiv.appendChild(giftItem);
+                        userDiv.appendChild(giftItem);
+                    });
+
+                container.appendChild(userDiv);
+
+                // Render suggestions for current user
+                const suggestionsDiv = document.createElement('div');
+                suggestionsDiv.innerHTML = `<h3>Gift Suggestions for Me</h3>`;
+
+                (giftSuggestions[currentUser] || []).forEach((suggestion, index) => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'gift-item';
+
+                    suggestionItem.innerHTML = `
+                        <p>${suggestion.text}</p>
+                        <div class="gift-status ${suggestion.status === 'YES PLEASE!' ? 'yesplease' : 'nothanks'}" 
+                             onclick="toggleSuggestion('${currentUser}', ${index})">
+                            ${suggestion.status || 'No Thanks Already Have!'}
+                        </div>
+                    `;
+
+                    suggestionsDiv.appendChild(suggestionItem);
+                });
+
+                container.appendChild(suggestionsDiv);
+            }
+
+            // Render other users' gifts and suggestions
+            Object.entries(giftRegistry).forEach(([username, gifts]) => {
+                if (username === currentUser) return;
+
+                const userDiv = document.createElement('div');
+                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+
+                gifts
+                    .filter(gift => gift && gift.text && gift.text.trim() !== "")
+                    .forEach((gift, index) => {
+                        const giftItem = document.createElement('div');
+                        giftItem.className = 'gift-item';
+
+                        giftItem.innerHTML = `
+                            <p>${gift.text}</p>
+                            <div class="gift-status">Non-clickable button</div>
+                        `;
+
+                        userDiv.appendChild(giftItem);
+                    });
+
+                container.appendChild(userDiv);
             });
-
-        container.appendChild(userDiv);
-    });
-}
-
-        async function addGift() {
-            const giftText = document.getElementById('giftInput').value.trim();
-            if (!giftText) {
-                alert("Gift description cannot be empty.");
-                return;
-            }
-
-            const gifts = giftRegistry[currentUser] || [];
-            gifts.push({ text: giftText, status: 'unchecked', checkedBy: null });
-
-            await db.collection('giftRegistry').doc(currentUser).set({ gifts });
-            giftRegistry[currentUser] = gifts;
-            renderGifts();
-
-            document.getElementById('giftInput').value = '';
         }
 
-        async function deleteGift(username, index) {
-            const gifts = giftRegistry[username];
-            gifts.splice(index, 1);
+        async function toggleSuggestion(username, index) {
+            const suggestion = giftSuggestions[username][index];
+            suggestion.status = suggestion.status === 'YES PLEASE!' ? 'No Thanks Already Have!' : 'YES PLEASE!';
 
-            await db.collection('giftRegistry').doc(username).set({ gifts });
-            giftRegistry[username] = gifts;
-            renderGifts();
-        }
-
-        async function toggleCheck(username, index) {
-            const gift = giftRegistry[username][index];
-
-            if (gift.status === 'unchecked') {
-                gift.status = 'checked';
-                gift.checkedBy = currentUser;
-            } else if (gift.status === 'checked' && gift.checkedBy === currentUser) {
-                gift.status = 'unchecked';
-                gift.checkedBy = null;
-            } else {
-                alert("This gift is already claimed by another Santa!");
-                return;
-            }
-
-            await db.collection('giftRegistry').doc(username).set({ gifts: giftRegistry[username] });
+            await db.collection('gift_suggestions').doc(username).set({ suggestions: giftSuggestions[username] });
             renderGifts();
         }
 
