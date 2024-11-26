@@ -144,17 +144,15 @@
             }
         }
 
-async function renderGiftSuggestionsForUser(username) {
-    const container = document.getElementById('giftList'); // Append directly to the main container
-
-    // Create a new section for the user's suggestions
+async function renderGiftSuggestionsForUser(username, userDiv) {
+    // Create a container for suggestions
     const suggestionsContainer = document.createElement('div');
     suggestionsContainer.className = 'gift-list';
 
     // Add a header for suggestions
     suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`;
 
-    // Fetch gift suggestions from the database
+    // Fetch suggestions from the database
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
     const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
 
@@ -163,7 +161,7 @@ async function renderGiftSuggestionsForUser(username) {
         const suggestionItem = document.createElement('div');
         suggestionItem.className = 'gift-item';
 
-        // Only show the delete button for suggestions made by the current user
+        // Only show delete button for suggestions made by the current user
         const deleteButton = suggestion.suggestedBy === currentUser
             ? `<button onclick="deleteSuggestion('${username}', ${index})">Delete</button>`
             : '';
@@ -184,10 +182,9 @@ async function renderGiftSuggestionsForUser(username) {
     `;
     suggestionsContainer.appendChild(newSuggestionBox);
 
-    // Append the suggestions container directly to the main container
-    container.appendChild(suggestionsContainer);
+    // Append suggestions to the user's section
+    userDiv.appendChild(suggestionsContainer);
 }
-
   async function deleteSuggestion(username, index) {
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
     const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
@@ -258,7 +255,8 @@ async function renderGiftSuggestionsForUser(username) {
 
                 userDiv.appendChild(giftItem);
             });
-
+        
+        renderGiftSuggestionsForUser(currentUser, userDiv);
         container.appendChild(userDiv);
     }
 
@@ -290,7 +288,7 @@ async function renderGiftSuggestionsForUser(username) {
 //        staticPhrase.textContent = `TEST PHRASE FOR: ${username}`;
 //        userDiv.appendChild(staticPhrase);
         
-        renderGiftSuggestionsForUser(username);
+        renderGiftSuggestionsForUser(currentUser, userDiv);
 
         container.appendChild(userDiv);
     
