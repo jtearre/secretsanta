@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SS Registry</title>
     <style>
-        /* Styles unchanged for consistency */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -212,6 +211,15 @@
             suggestion.status = suggestion.status === 'YES PLEASE!' ? 'No Thanks Already Have!' : 'YES PLEASE!';
 
             await db.collection('gift_suggestions').doc(username).set({ suggestions: giftSuggestions[username] });
+            renderGifts();
+        }
+
+        async function deleteGift(username, index) {
+            const gifts = giftRegistry[username];
+            gifts.splice(index, 1);
+
+            await db.collection('giftRegistry').doc(username).set({ gifts });
+            giftRegistry[username] = gifts;
             renderGifts();
         }
 
