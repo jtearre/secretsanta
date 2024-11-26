@@ -192,18 +192,26 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
 }
         
         
-    async function deleteSuggestion(username, index) {
+async function deleteSuggestion(username, index) {
+    // Fetch current suggestions for the user
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
-    const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
+    const currentSuggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
+
+    if (index < 0 || index >= currentSuggestions.length) {
+        console.error("Invalid index for deletion");
+        return;
+    }
 
     // Remove the suggestion at the specified index
-    suggestions.splice(index, 1);
+    currentSuggestions.splice(index, 1);
 
     // Update the database
-    await db.collection('gift_suggestions').doc(username).set({ suggestions });
-    
-    // Re-render the suggestions
-    renderGiftSuggestionsForUser(username);
+    await db.collection('gift_suggestions').doc(username).set({
+        suggestions: currentSuggestions,
+    });
+
+    // Re-render the entire gifts list
+    loadGifts(); // Refresh everything, similar to submitting a suggestion
 }
 
 async function submitSuggestion(username) {
