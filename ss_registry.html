@@ -105,11 +105,12 @@
             }
 
             currentUser = username;
-            loadGifts();
-            loadSuggestions(); // Load gift suggestions
+            loadGifts(); // Load original gift registry
+            loadSuggestions(); // Load gift suggestions (separately)
             return true;
         }
 
+        // Load and render original gift registry
         async function loadGifts() {
             const registrySnapshot = await db.collection('giftRegistry').get();
             giftRegistry = {};
@@ -118,23 +119,12 @@
                 giftRegistry[doc.id] = doc.data().gifts || [];
             });
 
-            renderGifts();
+            renderOriginalGifts(); // Only render the original gift functionality
         }
 
-        async function loadSuggestions() {
-            const suggestionsSnapshot = await db.collection('gift_suggestions').get();
-            giftSuggestions = {};
-
-            suggestionsSnapshot.forEach(doc => {
-                giftSuggestions[doc.id] = doc.data().suggestions || [];
-            });
-
-            renderGifts(); // Re-render gifts to include suggestions
-        }
-
-        function renderGifts() {
+        function renderOriginalGifts() {
             const container = document.getElementById('giftList');
-            container.innerHTML = '';
+            container.innerHTML = ''; // Clear container
 
             // Render current user's gifts
             if (giftRegistry[currentUser]) {
@@ -158,12 +148,52 @@
                     });
 
                 container.appendChild(userDiv);
+            }
 
-                // Render suggestions for current user
-                const suggestionsDiv = document.createElement('div');
-                suggestionsDiv.innerHTML = `<h3>Gift Suggestions for Me</h3>`;
+            // Render gifts for other users
+            Object.entries(giftRegistry).forEach(([username, gifts]) => {
+                if (username === currentUser) return;
 
-                (giftSuggestions[currentUser] || []).forEach((suggestion, index) => {
+                const userDiv = document.createElement('div');
+                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+
+                gifts
+                    .filter(gift => gift && gift.text && gift.text.trim() !== "")
+                    .forEach(gift => {
+                        const giftItem = document.createElement('div');
+                        giftItem.className = 'gift-item';
+
+                        giftItem.innerHTML = `<p>${gift.text}</p>`;
+                        userDiv.appendChild(giftItem);
+                    });
+
+                container.appendChild(userDiv);
+            });
+        }
+
+        // Load and render gift suggestions (new functionality)
+        async function loadSuggestions() {
+            const suggestionsSnapshot = await db.collection('gift_suggestions').get();
+            giftSuggestions = {};
+
+            suggestionsSnapshot.forEach(doc => {
+                giftSuggestions[doc.id] = doc.data().suggestions || [];
+            });
+
+            renderGiftSuggestions(); // Render gift suggestions independently
+        }
+
+        function renderGiftSuggestions() {
+            const container = document.getElementById('giftSuggestions');
+            container.innerHTML = ''; // Clear container
+
+            // Render suggestions for current user
+            const suggestionsForMe = giftSuggestions[currentUser] || [];
+            if (suggestionsForMe.length > 0) {
+                const mySuggestionsDiv = document.createElement('div');
+                mySuggestionsDiv.innerHTML = `<h3>Gift Suggestions for Me</h3>`;
+
+                suggestionsForMe.forEach((suggestion, index) => {
                     const suggestionItem = document.createElement('div');
                     suggestionItem.className = 'gift-item';
 
@@ -175,34 +205,35 @@
                         </div>
                     `;
 
-                    suggestionsDiv.appendChild(suggestionItem);
+                    mySuggestionsDiv.appendChild(suggestionItem);
                 });
 
-                container.appendChild(suggestionsDiv);
+                container.appendChild(mySuggestionsDiv);
             }
 
-            // Render other users' gifts and suggestions
-            Object.entries(giftRegistry).forEach(([username, gifts]) => {
+            // Render suggestions for other users
+            Object.keys(giftRegistry).forEach(username => {
                 if (username === currentUser) return;
 
-                const userDiv = document.createElement('div');
-                userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+                const suggestionsForUser = giftSuggestions[username] || [];
+                const userSuggestionsDiv = document.createElement('div');
+                userSuggestionsDiv.innerHTML = `<h3>Suggestions for ${username}</h3>`;
 
-                gifts
-                    .filter(gift => gift && gift.text && gift.text.trim() !== "")
-                    .forEach((gift, index) => {
-                        const giftItem = document.createElement('div');
-                        giftItem.className = 'gift-item';
+                suggestionsForUser.forEach(suggestion => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'gift-item';
 
-                        giftItem.innerHTML = `
-                            <p>${gift.text}</p>
-                            <div class="gift-status">Non-clickable button</div>
-                        `;
+                    suggestionItem.innerHTML = `
+                        <p>${suggestion.text}</p>
+                        <div class="gift-status ${suggestion.status === 'YES PLEASE!' ? 'yesplease' : 'nothanks'}">
+                            ${suggestion.status || 'No Thanks Already Have!'}
+                        </div>
+                    `;
 
-                        userDiv.appendChild(giftItem);
-                    });
+                    userSuggestionsDiv.appendChild(suggestionItem);
+                });
 
-                container.appendChild(userDiv);
+                container.appendChild(userSuggestionsDiv);
             });
         }
 
@@ -211,7 +242,7 @@
             suggestion.status = suggestion.status === 'YES PLEASE!' ? 'No Thanks Already Have!' : 'YES PLEASE!';
 
             await db.collection('gift_suggestions').doc(username).set({ suggestions: giftSuggestions[username] });
-            renderGifts();
+            renderGiftSuggestions();
         }
 
         async function deleteGift(username, index) {
@@ -219,8 +250,7 @@
             gifts.splice(index, 1);
 
             await db.collection('giftRegistry').doc(username).set({ gifts });
-            giftRegistry[username] = gifts;
-            renderGifts();
+            renderOriginalGifts();
         }
 
         window.onload = authenticate;
@@ -231,10 +261,11 @@
 <div class="container">
     <h1>Secret Santa Registry</h1>
 
-    <textarea id="giftInput" placeholder="Describe your gift (add links, details, etc.)"></textarea>
-    <button onclick="addGift()">Add to My List</button>
-
+    <!-- Original Gift List -->
     <div id="giftList" class="gift-list"></div>
+
+    <!-- New Gift Suggestions Section -->
+    <div id="giftSuggestions" class="gift-list"></div>
 </div>
 
 </body>
