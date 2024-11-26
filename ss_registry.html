@@ -271,6 +271,7 @@ async function submitSuggestion(username) {
     currentSuggestions.push({
         text: suggestionText,
         suggestedBy: currentUser,
+        status: 'no', // Default status for new suggestions
     });
 
     // Update the database
