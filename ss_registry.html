@@ -286,11 +286,13 @@ async function renderGiftSuggestionsForUser(username) {
                console.log(`Just rendered gift for user: ${username}`);
     
             });
-        const staticPhrase = document.createElement('p');
-        staticPhrase.textContent = `TEST PHRASE FOR: ${username}`;
-        userDiv.appendChild(staticPhrase);
+//        const staticPhrase = document.createElement('p');
+//        staticPhrase.textContent = `TEST PHRASE FOR: ${username}`;
+//        userDiv.appendChild(staticPhrase);
+        
+        renderGiftSuggestionsForUser(username);
+
         container.appendChild(userDiv);
- //        renderGiftSuggestionsForUser(username);
     
     });  
   }
