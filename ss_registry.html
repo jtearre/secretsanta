@@ -233,15 +233,8 @@ async function submitSuggestion(username) {
     // Clear the input box
     suggestionInput.value = '';
 
-    // Re-render the user's suggestions
-    const userDiv = document.querySelector(`#user-section-${username}`);
-    if (userDiv) {
-        const suggestionsContainer = userDiv.querySelector('.gift-list');
-        if (suggestionsContainer) {
-            suggestionsContainer.remove();
-        }
-        await renderGiftSuggestionsForUser(username, userDiv);
-    }
+    // Re-render the entire gifts list
+    loadGifts(); // This will call renderGifts and refresh everything
 }
   
     function renderGifts() {
