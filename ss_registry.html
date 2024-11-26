@@ -266,6 +266,7 @@ async function renderGiftSuggestionsForUser(username) {
     Object.entries(giftRegistry).forEach(([username, gifts]) => {
         if (username === currentUser) return;
 
+        console.log(`SUCK IT!!!! ${username}`);
         const userDiv = document.createElement('div');
         userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
 
