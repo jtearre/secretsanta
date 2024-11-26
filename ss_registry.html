@@ -283,12 +283,16 @@ async function renderGiftSuggestionsForUser(username) {
                 `;
 
                 userDiv.appendChild(giftItem);
+               console.log(`Just rendered gift for user: ${username}`);
+    
+                console.log(`Rendering gift suggestions for user: ${username}`);
+        renderGiftSuggestionsForUser(username);
+                
+            
             });
 
         container.appendChild(userDiv);
-        console.log(`Rendering gift suggestions for user: ${username}`);
-        renderGiftSuggestionsForUser(username);
-    
+
     
     });  
   }
