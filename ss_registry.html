@@ -145,35 +145,38 @@
 
 
 async function renderGiftSuggestionsForUser(username) {
-    const userSection = document.querySelector(`#user-section-${username}`);
-    if (!userSection) {
-        console.error(`User section not found for: ${username}`);
-        return; // Exit early if the section doesn't exist
-    }
+    const container = document.getElementById('giftList'); // Append directly to the main container
 
+    // Create a new section for the user's suggestions
     const suggestionsContainer = document.createElement('div');
     suggestionsContainer.className = 'gift-list';
 
+    // Add a header for suggestions
     suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`;
 
+    // Fetch gift suggestions from the database
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
     const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
 
+    // Render each suggestion
     suggestions.forEach((suggestion, index) => {
         const suggestionItem = document.createElement('div');
         suggestionItem.className = 'gift-item';
 
+        // Only show the delete button for suggestions made by the current user
+        const deleteButton = suggestion.suggestedBy === currentUser
+            ? `<button onclick="deleteSuggestion('${username}', ${index})">Delete</button>`
+            : '';
+
         suggestionItem.innerHTML = `
             <p>${suggestion.text}</p>
-            <div>
-                ${suggestion.suggestedBy === currentUser ? 
-                    `<button onclick="deleteSuggestion('${username}', ${index})">Delete</button>` : ''}
-            </div>
+            <div>${deleteButton}</div>
         `;
 
         suggestionsContainer.appendChild(suggestionItem);
     });
 
+    // Add a box for new suggestions
     const newSuggestionBox = document.createElement('div');
     newSuggestionBox.innerHTML = `
         <textarea id="suggestionInput-${username}" placeholder="Suggest a gift..."></textarea>
@@ -181,7 +184,8 @@ async function renderGiftSuggestionsForUser(username) {
     `;
     suggestionsContainer.appendChild(newSuggestionBox);
 
-    userSection.appendChild(suggestionsContainer);
+    // Append the suggestions container directly to the main container
+    container.appendChild(suggestionsContainer);
 }
 
   async function deleteSuggestion(username, index) {
