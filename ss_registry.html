@@ -150,14 +150,17 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
     suggestionsContainer.className = 'gift-list';
 
     // Add a header for suggestions
-    suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`;
+    suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`; // Correct username is used
 
-    // Fetch suggestions from the database
+    // Fetch gift suggestions from the database
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
     const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
 
-    // Render each suggestion
-    suggestions.forEach((suggestion, index) => {
+    // Filter out undefined or empty fields
+    const validSuggestions = suggestions.filter(suggestion => suggestion && suggestion.text && suggestion.text.trim() !== "");
+
+    // Render each valid suggestion
+    validSuggestions.forEach((suggestion, index) => {
         const suggestionItem = document.createElement('div');
         suggestionItem.className = 'gift-item';
 
@@ -185,7 +188,10 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
     // Append suggestions to the user's section
     userDiv.appendChild(suggestionsContainer);
 }
-  async function deleteSuggestion(username, index) {
+
+        
+        
+    async function deleteSuggestion(username, index) {
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
     const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
 
