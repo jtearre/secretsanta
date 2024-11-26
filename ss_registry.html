@@ -76,6 +76,16 @@
         .gift-status.another {
             background-color: #d4ffd4;
         }
+   
+    .gift-status.yes {
+    background-color: #d4ffd4;
+}
+
+.gift-status.no {
+    background-color: #ffe6e6;
+}
+
+    
     </style>
 
     <!-- Firebase SDKs -->
@@ -164,20 +174,51 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
         const suggestionItem = document.createElement('div');
         suggestionItem.className = 'gift-item';
 
-        // Render the suggestion text and optionally show a delete button
-        const deleteButton = suggestion.suggestedBy === currentUser
-            ? `<button onclick="deleteSuggestion('${username}', ${index})">Delete</button>`
-            : '';
+        // Determine the button text and class based on the status
+        const isYes = suggestion.status === 'yes';
+        const buttonText = isYes ? "YES PLEASE!" : "No Thanks Already Have!";
+        const buttonClass = isYes ? "yes" : "no";
 
-        suggestionItem.innerHTML = `
-            <p>${suggestion.text}</p>
-            <div>${deleteButton}</div>
-        `;
+        // Create the button
+        const button = document.createElement('button');
+        button.textContent = buttonText;
+        button.className = `gift-status ${buttonClass}`;
+        button.style.cursor = username === currentUser ? 'pointer' : 'default'; // Make clickable only for logged-in user
+
+        // Add toggle functionality for the logged-in user
+        if (username === currentUser) {
+            button.onclick = async () => {
+                // Toggle the status
+                suggestion.status = suggestion.status === 'yes' ? 'no' : 'yes';
+
+                // Update the database
+                validSuggestions[index] = suggestion;
+                await db.collection('gift_suggestions').doc(username).set({
+                    suggestions: validSuggestions,
+                });
+
+                // Re-render the suggestions for this user
+                const userSection = document.querySelector(`#user-section-${username}`);
+                if (userSection) {
+                    const suggestionsContainer = userSection.querySelector('.gift-list');
+                    if (suggestionsContainer) {
+                        suggestionsContainer.remove();
+                    }
+                    await renderGiftSuggestionsForUser(username, userSection);
+                }
+            };
+        } else {
+            button.disabled = true; // Non-clickable for other users
+        }
+
+        // Add the suggestion text and button to the item
+        suggestionItem.innerHTML = `<p>${suggestion.text}</p>`;
+        suggestionItem.appendChild(button);
 
         suggestionsContainer.appendChild(suggestionItem);
     });
 
-    // Only add a text box for adding new suggestions if the user is NOT the logged-in user
+    // Add a box for new suggestions (only for other users)
     if (username !== currentUser) {
         const newSuggestionBox = document.createElement('div');
         newSuggestionBox.innerHTML = `
@@ -190,7 +231,6 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
     // Append suggestions to the user's section
     userDiv.appendChild(suggestionsContainer);
 }
-        
         
 async function deleteSuggestion(username, index) {
     // Fetch current suggestions for the user
