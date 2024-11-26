@@ -252,7 +252,7 @@ async function submitSuggestion(username) {
     // Render current user's gifts
     if (giftRegistry[currentUser]) {
         const userDiv = document.createElement('div');
-        userDiv.innerHTML = `<h3>My Gifts</h3>`;
+        userDiv.innerHTML = `<h3>My Gift Requests</h3>`;
 
         giftRegistry[currentUser]
             .filter(gift => gift && gift.text && gift.text.trim() !== "") // Filter out invalid or empty gifts
@@ -279,7 +279,7 @@ async function submitSuggestion(username) {
         if (username === currentUser) return;
         
         const userDiv = document.createElement('div');
-        userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
+        userDiv.innerHTML = `<h3>${username}'s Gift Requests</h3>`;
 
         gifts
             .filter(gift => gift && gift.text && gift.text.trim() !== "") // Filter out invalid or empty gifts
