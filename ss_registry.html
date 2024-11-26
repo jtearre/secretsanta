@@ -284,10 +284,13 @@ async function renderGiftSuggestionsForUser(username) {
 
         container.appendChild(userDiv);
 
-     renderGiftSuggestionsForUser(username);
+
     
-    });
-}
+        });
+
+       renderGiftSuggestionsForUser(username);
+  
+  }
 
         async function addGift() {
             const giftText = document.getElementById('giftInput').value.trim();
