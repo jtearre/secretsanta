@@ -145,96 +145,6 @@
         }
 
 
-async function renderGiftSuggestionsForUser(username) {
-    const container = document.getElementById('giftList'); // Append directly to the main container
-
-    // Create a new section for the user's suggestions
-    const suggestionsContainer = document.createElement('div');
-    suggestionsContainer.className = 'gift-list';
-
-    // Add a header for suggestions
-    suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`;
-
-    // Fetch gift suggestions from the database
-    const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
-    const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
-
-    // Render each suggestion
-    suggestions.forEach((suggestion, index) => {
-        const suggestionItem = document.createElement('div');
-        suggestionItem.className = 'gift-item';
-
-        // Only show the delete button for suggestions made by the current user
-        const deleteButton = suggestion.suggestedBy === currentUser
-            ? `<button onclick="deleteSuggestion('${username}', ${index})">Delete</button>`
-            : '';
-
-        suggestionItem.innerHTML = `
-            <p>${suggestion.text}</p>
-            <div>${deleteButton}</div>
-        `;
-
-        suggestionsContainer.appendChild(suggestionItem);
-    });
-
-    // Add a box for new suggestions
-    const newSuggestionBox = document.createElement('div');
-    newSuggestionBox.innerHTML = `
-        <textarea id="suggestionInput-${username}" placeholder="Suggest a gift..."></textarea>
-        <button onclick="submitSuggestion('${username}')">Submit Suggestion</button>
-    `;
-    suggestionsContainer.appendChild(newSuggestionBox);
-
-    // Append the suggestions container directly to the main container
-    container.appendChild(suggestionsContainer);
-}
-
-  async function deleteSuggestion(username, index) {
-    const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
-    const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
-
-    // Remove the suggestion at the specified index
-    suggestions.splice(index, 1);
-
-    // Update the database
-    await db.collection('gift_suggestions').doc(username).set({ suggestions });
-    
-    // Re-render the suggestions
-    renderGiftSuggestionsForUser(username);
-}
-
-        async function submitSuggestion(username) {
-    const input = document.getElementById(`suggestionInput-${username}`);
-    const suggestionText = input.value.trim();
-
-    if (!suggestionText) {
-        alert("Suggestion cannot be empty.");
-        return;
-    }
-
-    // Fetch current suggestions from the database
-    const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
-    const suggestions = suggestionsDoc.exists ? suggestionsDoc.data().suggestions || [] : [];
-
-    // Add the new suggestion
-    suggestions.push({
-        text: suggestionText,
-        suggestedBy: currentUser,
-        status: 'No Thanks Already Have!' // Default status
-    });
-
-    // Update the database
-    await db.collection('gift_suggestions').doc(username).set({ suggestions });
-
-    // Clear the input box
-    input.value = '';
-
-    // Re-render the suggestions
-    renderGiftSuggestionsForUser(username);
-}
-
-
-        
   function renderGifts() {
     const container = document.getElementById('giftList');
     container.innerHTML = '';
@@ -266,8 +176,6 @@ async function renderGiftSuggestionsForUser(username) {
     // Render gifts for other users
     Object.entries(giftRegistry).forEach(([username, gifts]) => {
         if (username === currentUser) return;
-
-        console.log(`SUCK IT!!!! ${username}`);
         
         const userDiv = document.createElement('div');
         userDiv.innerHTML = `<h3>${username}'s Gifts</h3>`;
@@ -288,10 +196,6 @@ async function renderGiftSuggestionsForUser(username) {
                 userDiv.appendChild(giftItem);
                console.log(`Just rendered gift for user: ${username}`);
     
-                console.log(`SUCK A BIG DICK: ${username}`);
-//        renderGiftSuggestionsForUser(username);
-                
-            
             });
 
         container.appendChild(userDiv);
