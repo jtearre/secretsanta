@@ -150,7 +150,7 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
     suggestionsContainer.className = 'gift-list';
 
     // Add a header for suggestions
-    suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`; // Correct username is used
+    suggestionsContainer.innerHTML = `<h3>Gift Suggestions for ${username}</h3>`;
 
     // Fetch gift suggestions from the database
     const suggestionsDoc = await db.collection('gift_suggestions').doc(username).get();
@@ -164,7 +164,7 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
         const suggestionItem = document.createElement('div');
         suggestionItem.className = 'gift-item';
 
-        // Only show delete button for suggestions made by the current user
+        // Render the suggestion text and optionally show a delete button
         const deleteButton = suggestion.suggestedBy === currentUser
             ? `<button onclick="deleteSuggestion('${username}', ${index})">Delete</button>`
             : '';
@@ -177,18 +177,19 @@ async function renderGiftSuggestionsForUser(username, userDiv) {
         suggestionsContainer.appendChild(suggestionItem);
     });
 
-    // Add a box for new suggestions
-    const newSuggestionBox = document.createElement('div');
-    newSuggestionBox.innerHTML = `
-        <textarea id="suggestionInput-${username}" placeholder="Suggest a gift..."></textarea>
-        <button onclick="submitSuggestion('${username}')">Submit Suggestion</button>
-    `;
-    suggestionsContainer.appendChild(newSuggestionBox);
+    // Only add a text box for adding new suggestions if the user is NOT the logged-in user
+    if (username !== currentUser) {
+        const newSuggestionBox = document.createElement('div');
+        newSuggestionBox.innerHTML = `
+            <textarea id="suggestionInput-${username}" placeholder="Suggest a gift..."></textarea>
+            <button onclick="submitSuggestion('${username}')">Submit Suggestion</button>
+        `;
+        suggestionsContainer.appendChild(newSuggestionBox);
+    }
 
     // Append suggestions to the user's section
     userDiv.appendChild(suggestionsContainer);
 }
-
         
         
     async function deleteSuggestion(username, index) {
